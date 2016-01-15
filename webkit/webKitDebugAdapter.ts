@@ -20,7 +20,7 @@ interface IScopeVarHandle {
 
 export class WebKitDebugAdapter implements IDebugAdapter {
     private static THREAD_ID = 1;
-    private static PAGE_PAUSE_MESSAGE = 'Paused in Visual Studio Code';
+    private static PAGE_PAUSE_MESSAGE = 'Paused in Kode Studio';
     private static EXCEPTION_VALUE_ID = 'EXCEPTION_VALUE_ID';
 
     private _initArgs: DebugProtocol.InitializeRequestArguments;
