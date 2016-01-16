@@ -44,7 +44,8 @@
         "enableBreakpointsFor": {
           "languageIds": [
             "javascript",
-            "typescriptreact"
+            "typescriptreact",
+            "haxe"
           ]
         },
         "program": "./out/webkit/webkitDebug.js",

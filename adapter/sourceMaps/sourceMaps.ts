@@ -309,7 +309,8 @@ class SourceMap {
 	 * returns true if this source map originates from the given source.
 	 */
 	public doesOriginateFrom(absPath: string): boolean {
-		return this.sources.some(path => path === absPath);
+		//return this.sources.some(path => path === absPath);
+		return true; // Haxe creates just one JavaScript file
 	}
 
 	/*
