@@ -75,39 +75,23 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     public launch(args: ILaunchRequestArgs): Promise<void> {
         this.initDiagnosticLogging('launch', args);
 
-        // Check exists?
-        const chromePath = args.runtimeExecutable || utils.getBrowserPath();
-        if (!chromePath) {
-            return utils.errP(`Can't find Chrome - install it or set the "runtimeExecutable" field in the launch config.`);
-        }
+        const electronPath = args.runtimeExecutable;
 
         // Start with remote debugging enabled
         const port = args.port || 9222;
-        const chromeArgs: string[] = ['--remote-debugging-port=' + port];
+        const electronArgs: string[] = ['--remote-debugging-port=' + port];
 
-        // Also start with extra stuff disabled
-        chromeArgs.push(...['--no-first-run', '--no-default-browser-check']);
-        if (args.runtimeArgs) {
-            chromeArgs.push(...args.runtimeArgs);
-        }
-
-        if (args.userDataDir) {
-            chromeArgs.push('--user-data-dir=' + args.userDataDir);
-        }
+        electronArgs.push(path.resolve(args.cwd, args.file));
 
         let launchUrl: string;
         if (args.file) {
-            launchUrl = 'file:///' + path.resolve(args.cwd, args.file);
+            launchUrl = 'file:///' + path.resolve(args.cwd, path.join(args.file, 'index.html'));
         } else if (args.url) {
             launchUrl = args.url;
         }
 
-        if (launchUrl) {
-            chromeArgs.push(launchUrl);
-        }
-
-        Logger.log(`spawn('${chromePath}', ${JSON.stringify(chromeArgs) })`);
-        this._chromeProc = spawn(chromePath, chromeArgs, {
+        Logger.log(`spawn('${electronPath}', ${JSON.stringify(electronArgs) })`);
+        this._chromeProc = spawn(electronPath, electronArgs, {
             detached: true,
             stdio: ['ignore']
         });
