@@ -11,6 +11,7 @@ import {Logger} from './utilities';
 import {formatConsoleMessage} from './consoleHelper';
 
 import {spawn, fork, ChildProcess} from 'child_process';
+import * as fs from 'fs';
 import * as path from 'path';
 
 interface IScopeVarHandle {
@@ -76,36 +77,44 @@ export class WebKitDebugAdapter implements IDebugAdapter {
         this.initDiagnosticLogging('launch', args);
 
         return new Promise<void>((resolve, reject) => {
-            let process = fork('Kha/make', ['debug-html5'], {cwd: args.cwd});
-            process.on('exit', (code) => {
-                const electronPath = args.runtimeExecutable;
-
-                // Start with remote debugging enabled
-                const port = args.port || 9222;
-                const electronArgs: string[] = ['--remote-debugging-port=' + port];
-
-                electronArgs.push(path.resolve(args.cwd, args.file));
-
-                let launchUrl: string;
-                if (args.file) {
-                    launchUrl = 'file:///' + path.resolve(args.cwd, path.join(args.file, 'index.html'));
-                } else if (args.url) {
-                    launchUrl = args.url;
+            fs.stat(path.resolve(args.cwd, 'Kha'), (err, stats) => {
+                let process: ChildProcess;
+                if (err == null) {
+                    process = fork('Kha/make', ['debug-html5'], {cwd: args.cwd});
                 }
+                else {
+                    process = spawn('haxelib', ['run', 'kha', 'debug-html5'], {cwd: args.cwd});
+                }
+                process.on('exit', (code) => {
+                    const electronPath = args.runtimeExecutable;
 
-                Logger.log(`spawn('${electronPath}', ${JSON.stringify(electronArgs) })`);
-                this._chromeProc = spawn(electronPath, electronArgs, {
-                    detached: true,
-                    stdio: ['ignore']
-                });
-                (<any>this._chromeProc).unref();
-                this._chromeProc.on('error', (err) => {
-                    Logger.log('chrome error: ' + err);
-                    this.terminateSession();
-                });
+                    // Start with remote debugging enabled
+                    const port = args.port || 9222;
+                    const electronArgs: string[] = ['--remote-debugging-port=' + port];
 
-                this._attach(port, launchUrl).then(() => {
-                    resolve();
+                    electronArgs.push(path.resolve(args.cwd, args.file));
+
+                    let launchUrl: string;
+                    if (args.file) {
+                        launchUrl = 'file:///' + path.resolve(args.cwd, path.join(args.file, 'index.html'));
+                    } else if (args.url) {
+                        launchUrl = args.url;
+                    }
+
+                    Logger.log(`spawn('${electronPath}', ${JSON.stringify(electronArgs) })`);
+                    this._chromeProc = spawn(electronPath, electronArgs, {
+                        detached: true,
+                        stdio: ['ignore']
+                    });
+                    (<any>this._chromeProc).unref();
+                    this._chromeProc.on('error', (err) => {
+                        Logger.log('chrome error: ' + err);
+                        this.terminateSession();
+                    });
+
+                    this._attach(port, launchUrl).then(() => {
+                        resolve();
+                    });
                 });
             });
         });
