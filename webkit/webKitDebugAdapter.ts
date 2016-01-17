@@ -10,7 +10,7 @@ import * as utils from './utilities';
 import {Logger} from './utilities';
 import {formatConsoleMessage} from './consoleHelper';
 
-import {spawn, ChildProcess} from 'child_process';
+import {spawn, fork, ChildProcess} from 'child_process';
 import * as path from 'path';
 
 interface IScopeVarHandle {
@@ -75,33 +75,40 @@ export class WebKitDebugAdapter implements IDebugAdapter {
     public launch(args: ILaunchRequestArgs): Promise<void> {
         this.initDiagnosticLogging('launch', args);
 
-        const electronPath = args.runtimeExecutable;
+        return new Promise<void>((resolve, reject) => {
+            let process = fork('Kha/make', ['debug-html5'], {cwd: args.cwd});
+            process.on('exit', (code) => {
+                const electronPath = args.runtimeExecutable;
 
-        // Start with remote debugging enabled
-        const port = args.port || 9222;
-        const electronArgs: string[] = ['--remote-debugging-port=' + port];
+                // Start with remote debugging enabled
+                const port = args.port || 9222;
+                const electronArgs: string[] = ['--remote-debugging-port=' + port];
 
-        electronArgs.push(path.resolve(args.cwd, args.file));
+                electronArgs.push(path.resolve(args.cwd, args.file));
 
-        let launchUrl: string;
-        if (args.file) {
-            launchUrl = 'file:///' + path.resolve(args.cwd, path.join(args.file, 'index.html'));
-        } else if (args.url) {
-            launchUrl = args.url;
-        }
+                let launchUrl: string;
+                if (args.file) {
+                    launchUrl = 'file:///' + path.resolve(args.cwd, path.join(args.file, 'index.html'));
+                } else if (args.url) {
+                    launchUrl = args.url;
+                }
 
-        Logger.log(`spawn('${electronPath}', ${JSON.stringify(electronArgs) })`);
-        this._chromeProc = spawn(electronPath, electronArgs, {
-            detached: true,
-            stdio: ['ignore']
+                Logger.log(`spawn('${electronPath}', ${JSON.stringify(electronArgs) })`);
+                this._chromeProc = spawn(electronPath, electronArgs, {
+                    detached: true,
+                    stdio: ['ignore']
+                });
+                (<any>this._chromeProc).unref();
+                this._chromeProc.on('error', (err) => {
+                    Logger.log('chrome error: ' + err);
+                    this.terminateSession();
+                });
+
+                this._attach(port, launchUrl).then(() => {
+                    resolve();
+                });
+            });
         });
-        (<any>this._chromeProc).unref();
-        this._chromeProc.on('error', (err) => {
-            Logger.log('chrome error: ' + err);
-            this.terminateSession();
-        });
-
-        return this._attach(port, launchUrl);
     }
 
     public attach(args: IAttachRequestArgs): Promise<void> {
