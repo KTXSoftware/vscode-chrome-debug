@@ -94,7 +94,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                         electronDir = electronPath.substring(0, electronPath.lastIndexOf('\\'));
 
                     // Start with remote debugging enabled
-                    const port = args.port || 9222;
+                    const port = args.port || Math.floor((Math.random() * 10000) + 10000);;
                     const electronArgs: string[] = ['--remote-debugging-port=' + port];
 
                     electronArgs.push(path.resolve(args.cwd, args.file));
