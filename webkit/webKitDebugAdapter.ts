@@ -80,7 +80,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
             fs.stat(path.resolve(args.cwd, 'Kha'), (err, stats) => {
                 let process: ChildProcess;
                 if (err == null) {
-                    process = fork('Kha/make', ['debug-html5'], {cwd: args.cwd});
+                    process = fork('Kha/make', ['debug-html5', '--silent'], {cwd: args.cwd});
                 }
                 else {
                     process = spawn('haxelib', ['run', 'kha', 'debug-html5'], {cwd: args.cwd});
