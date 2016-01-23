@@ -78,14 +78,59 @@ export class WebKitDebugAdapter implements IDebugAdapter {
 
         return new Promise<void>((resolve, reject) => {
             fs.stat(path.resolve(args.cwd, 'Kha'), (err, stats) => {
-                let process: ChildProcess;
+                //let process: ChildProcess;
                 if (err == null) {
-                    process = fork('Kha/make', ['debug-html5', '--silent'], {cwd: args.cwd});
+                    //process = fork('Kha/make', ['debug-html5', '--silent'], {cwd: args.cwd});
+                    let options = {
+                        from: args.cwd,
+                        to: path.join(args.cwd, 'build'),
+                        projectfile: 'khafile.js',
+                        target: 'debug-html5',
+                        vr: 'none',
+                        pch: false,
+                        intermediate: '',
+                        graphics: 'direct3d9',
+                        visualstudio: 'vs2015',
+                        kha: '',
+                        haxe: '',
+                        ogg: '',
+                        aac: '',
+                        mp3: '',
+                        h264: '',
+                        webm: '',
+                        wmv: '',
+                        theora: '',
+                        kfx: '',
+                        krafix: '',
+                        nokrafix: false,
+                        embedflashassets: false,
+                        compile: false,
+                        run: false,
+                        init: false,
+                        name: 'Project',
+                        server: false,
+                        port: 8080,
+                        debug: false,
+                        silent: false
+                    };
+                    try {
+                        require(path.join(args.cwd, 'Kha/Tools/khamake/main.js'))
+                            .run(options, {
+                                info: message => {
+                                    this.fireEvent(new OutputEvent(message + '\n','stdout'));
+                                }, error: message => {
+                                    this.fireEvent(new OutputEvent(message + '\n', 'stderr'));
+                                }
+                            }, function (name) { });
+                    }
+                    catch (error) {
+                        this.fireEvent(new OutputEvent('Error: ' + error.toString() + '\n', 'stderr'));
+                    }
                 }
                 else {
-                    process = spawn('haxelib', ['run', 'kha', 'debug-html5'], {cwd: args.cwd});
+                    //process = spawn('haxelib', ['run', 'kha', 'debug-html5'], {cwd: args.cwd});
                 }
-                process.on('exit', (code) => {
+                //process.on('exit', (code) => {
                     const electronPath = args.runtimeExecutable;
                     let electronDir = electronPath;
                     if (electronPath.lastIndexOf('/') >= 0)
@@ -121,7 +166,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                     this._attach(port, launchUrl).then(() => {
                         resolve();
                     });
-                });
+                //});
             });
         });
     }
