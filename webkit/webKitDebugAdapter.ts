@@ -155,12 +155,12 @@ export class WebKitDebugAdapter implements IDebugAdapter {
 
                 electronArgs.push(path.resolve(args.cwd, args.file));
 
-        let launchUrl: string;
-        if (args.file) {
-            launchUrl = utils.pathToFileURL(args.file);
-        } else if (args.url) {
-            launchUrl = args.url;
-        }
+                let launchUrl: string;
+                if (args.file) {
+                    launchUrl = utils.pathToFileURL(path.join(args.cwd, args.file, 'index.html'));
+                } else if (args.url) {
+                    launchUrl = args.url;
+                }
 
                 Logger.log(`spawn('${electronPath}', ${JSON.stringify(electronArgs) })`);
                 this._chromeProc = spawn(electronPath, electronArgs, {
