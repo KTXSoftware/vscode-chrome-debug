@@ -10,6 +10,7 @@ interface ILaunchRequestArgs extends DebugProtocol.LaunchRequestArguments {
     diagnosticLogging?: boolean;
     userDataDir?: string;
     kha?: string;
+    ffmpeg?: string;
     cwd?: string;
 }
 

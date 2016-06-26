@@ -100,6 +100,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                     theora: '',
                     kfx: '',
                     krafix: '',
+                    ffmpeg: args.ffmpeg,
                     nokrafix: false,
                     embedflashassets: false,
                     compile: false,
@@ -111,9 +112,10 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                     debug: false,
                     silent: false
                 };
+                let success = false;
                 if (err == null) {
                     try {
-                        require(path.join(args.cwd, 'Kha/Tools/khamake/main.js'))
+                        success = require(path.join(args.cwd, 'Kha/Tools/khamake/main.js'))
                             .run(options, {
                                 info: message => {
                                     this.fireEvent(new OutputEvent(message + '\n','stdout'));
@@ -128,7 +130,7 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                 }
                 else {
                     try {
-                        require(path.join(args.kha, 'Tools/khamake/main.js'))
+                        success = require(path.join(args.kha, 'Tools/khamake/main.js'))
                             .run(options, {
                                 info: message => {
                                     this.fireEvent(new OutputEvent(message + '\n','stdout'));
@@ -142,41 +144,43 @@ export class WebKitDebugAdapter implements IDebugAdapter {
                     }
                 }
 
-                const electronPath = args.runtimeExecutable;
-                let electronDir = electronPath;
-                if (electronPath.lastIndexOf('/') >= 0)
-                    electronDir = electronPath.substring(0, electronPath.lastIndexOf('/'));
-                else if (electronPath.lastIndexOf('\\') >= 0)
-                    electronDir = electronPath.substring(0, electronPath.lastIndexOf('\\'));
+                if (success) {
+                    const electronPath = args.runtimeExecutable;
+                    let electronDir = electronPath;
+                    if (electronPath.lastIndexOf('/') >= 0)
+                        electronDir = electronPath.substring(0, electronPath.lastIndexOf('/'));
+                    else if (electronPath.lastIndexOf('\\') >= 0)
+                        electronDir = electronPath.substring(0, electronPath.lastIndexOf('\\'));
 
-                // Start with remote debugging enabled
-                const port = args.port || Math.floor((Math.random() * 10000) + 10000);;
-                const electronArgs: string[] = ['--remote-debugging-port=' + port];
+                    // Start with remote debugging enabled
+                    const port = args.port || Math.floor((Math.random() * 10000) + 10000);;
+                    const electronArgs: string[] = ['--remote-debugging-port=' + port];
 
-                electronArgs.push(path.resolve(args.cwd, args.file));
+                    electronArgs.push(path.resolve(args.cwd, args.file));
 
-                let launchUrl: string;
-                if (args.file) {
-                    launchUrl = utils.pathToFileURL(path.join(args.cwd, args.file, 'index.html'));
-                } else if (args.url) {
-                    launchUrl = args.url;
+                    let launchUrl: string;
+                    if (args.file) {
+                        launchUrl = utils.pathToFileURL(path.join(args.cwd, args.file, 'index.html'));
+                    } else if (args.url) {
+                        launchUrl = args.url;
+                    }
+
+                    Logger.log(`spawn('${electronPath}', ${JSON.stringify(electronArgs) })`);
+                    this._chromeProc = spawn(electronPath, electronArgs, {
+                        detached: true,
+                        stdio: ['ignore'],
+                        cwd: electronDir
+                    });
+                    (<any>this._chromeProc).unref();
+                    this._chromeProc.on('error', (err) => {
+                        Logger.log('chrome error: ' + err);
+                        this.terminateSession();
+                    });
+
+                    this._attach(port, launchUrl).then(() => {
+                        resolve();
+                    });
                 }
-
-                Logger.log(`spawn('${electronPath}', ${JSON.stringify(electronArgs) })`);
-                this._chromeProc = spawn(electronPath, electronArgs, {
-                    detached: true,
-                    stdio: ['ignore'],
-                    cwd: electronDir
-                });
-                (<any>this._chromeProc).unref();
-                this._chromeProc.on('error', (err) => {
-                    Logger.log('chrome error: ' + err);
-                    this.terminateSession();
-                });
-
-                this._attach(port, launchUrl).then(() => {
-                    resolve();
-                });
             });
         });
     }
