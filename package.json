@@ -42,7 +42,8 @@
           "languageIds": [
             "javascript",
             "typescriptreact",
-            "javascriptreact"
+            "javascriptreact",
+            "haxe"
           ]
         },
         "program": "./out/src/chromeDebug.js",
