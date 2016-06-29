@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import {ChromeDebugSession, logger} from 'vscode-chrome-debug-core';
+import {ChromeDebugSession, logger} from '../core';
 import * as path from 'path';
 
 // Start a ChromeDebugSession configured to only match 'page' targets, which are Chrome tabs

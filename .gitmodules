@@ -1,0 +1,4 @@
+[submodule "core"]
+	path = core
+	url = ../vscode-chrome-debug-core
+	branch = master
