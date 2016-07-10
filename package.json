@@ -48,6 +48,10 @@
         },
         "program": "./out/src/chromeDebug.js",
         "runtime": "node",
+        "variables": {
+          "FindKha": "kha.findKha",
+          "FindFFMPEG": "kha.findFFMPEG"
+        },
         "initialConfigurations": [
           {
             "name": "Launch index.html with sourcemaps",
@@ -186,5 +190,8 @@
         }
       }
     ]
-  }
+  },
+  "extensionDependencies": [
+    "ktx.kha"
+  ]
 }
