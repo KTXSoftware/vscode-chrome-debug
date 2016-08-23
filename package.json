@@ -31,7 +31,7 @@
     "typings": "^0.7.12"
   },
   "scripts": {
-    "postinstall": "typings install"
+    "postinstall": "cd src && typings install"
   },
   "contributes": {
     "debuggers": [
@@ -46,7 +46,7 @@
             "haxe"
           ]
         },
-        "program": "./out/src/chromeDebug.js",
+        "program": "./out/chromeDebug.js",
         "runtime": "node",
         "variables": {
           "FindKha": "kha.findKha",
