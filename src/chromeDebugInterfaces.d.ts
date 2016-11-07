@@ -13,6 +13,9 @@ export interface ILaunchRequestArgs extends Core.ILaunchRequestArgs {
     address?: string;
     port?: number;
     userDataDir?: string;
+    kha?: string;
+    ffmpeg?: string;
+    cwd?: string;
 }
 
 export interface IAttachRequestArgs extends Core.IAttachRequestArgs {

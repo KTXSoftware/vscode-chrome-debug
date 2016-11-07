@@ -10,6 +10,8 @@ import {DebugProtocol} from 'vscode-debugprotocol';
 import {ILaunchRequestArgs, IAttachRequestArgs} from './chromeDebugInterfaces';
 import * as utils from './utils';
 
+import * as path from 'path';
+
 const DefaultWebSourceMapPathOverrides: ISourceMapPathOverrides = {
     'webpack:///./*': '${webRoot}/*',
     'webpack:///*': '*',
@@ -17,7 +19,7 @@ const DefaultWebSourceMapPathOverrides: ISourceMapPathOverrides = {
 };
 
 export class ChromeDebugAdapter extends CoreDebugAdapter {
-    private static PAGE_PAUSE_MESSAGE = 'Paused in Visual Studio Code';
+    private static PAGE_PAUSE_MESSAGE = 'Paused in Kode Studio';
 
     private _chromeProc: ChildProcess;
     private _overlayHelper: utils.DebounceHelper;
@@ -30,50 +32,103 @@ export class ChromeDebugAdapter extends CoreDebugAdapter {
     public launch(args: ILaunchRequestArgs): Promise<void> {
         args.sourceMapPathOverrides = getSourceMapPathOverrides(args.webRoot, args.sourceMapPathOverrides);
         return super.launch(args).then(() => {
-            // Check exists?
-            const chromePath = args.runtimeExecutable || utils.getBrowserPath();
-            if (!chromePath) {
-                return coreUtils.errP(`Can't find Chrome - install it or set the "runtimeExecutable" field in the launch config.`);
-            }
+            logger.log('Using Kha from ' + args.kha + '\n', true);
 
-            // Start with remote debugging enabled
-            const port = args.port || 9222;
-            const chromeArgs: string[] = ['--remote-debugging-port=' + port];
+            let options = {
+                from: args.cwd,
+                to: path.join(args.cwd, 'build'),
+                projectfile: 'khafile.js',
+                target: 'debug-html5',
+                vr: 'none',
+                pch: false,
+                intermediate: '',
+                graphics: 'direct3d9',
+                visualstudio: 'vs2015',
+                kha: '',
+                haxe: '',
+                ogg: '',
+                aac: '',
+                mp3: '',
+                h264: '',
+                webm: '',
+                wmv: '',
+                theora: '',
+                kfx: '',
+                krafix: '',
+                ffmpeg: args.ffmpeg,
+                nokrafix: false,
+                embedflashassets: false,
+                compile: false,
+                run: false,
+                init: false,
+                name: 'Project',
+                server: false,
+                port: 8080,
+                debug: false,
+                silent: false,
+                watch: false
+            };
 
-            // Also start with extra stuff disabled
-            chromeArgs.push(...['--no-first-run', '--no-default-browser-check']);
-            if (args.runtimeArgs) {
-                chromeArgs.push(...args.runtimeArgs);
-            }
+            return require(path.join(args.kha, 'Tools/khamake/out/main.js')).run(options, {
+                info: message => {
+                    logger.log(message, true);
+                }, error: message => {
+                    logger.error(message, true);
+                }
+            }).then((value: string) => {
+                // Use vscode's electron
+                const chromePath = args.runtimeExecutable;
+                let chromeDir = chromePath;
+                if (chromePath.lastIndexOf('/') >= 0) {
+                    chromeDir = chromePath.substring(0, chromePath.lastIndexOf('/'));
+                } else if (chromePath.lastIndexOf('\\') >= 0) {
+                    chromeDir = chromePath.substring(0, chromePath.lastIndexOf('\\'));
+                }
 
-            if (args.userDataDir) {
-                chromeArgs.push('--user-data-dir=' + args.userDataDir);
-            }
+                // Use custom electron
+                // const chromeDir = path.join(__dirname, '..', '..', '..', 'node_modules', 'electron', 'dist');
+                // let chromePath = chromeDir;
+                // if (process.platform === 'win32') chromePath = path.join(chromePath, 'electron.exe');
+                // else if (process.platform === 'darwin') chromePath = path.join(chromePath, 'Electron.app', 'Contents', 'MacOS', 'Electron');
+                // else chromePath = path.join(chromePath, 'electron');
 
-            let launchUrl: string;
-            if (args.file) {
-                launchUrl = coreUtils.pathToFileURL(args.file);
-            } else if (args.url) {
-                launchUrl = args.url;
-            }
+                // Start with remote debugging enabled
+                const port = args.port || Math.floor((Math.random() * 10000) + 10000);
+                const chromeArgs: string[] = ['--chromedebug', '--remote-debugging-port=' + port];
 
-            if (launchUrl) {
-                chromeArgs.push(launchUrl);
-            }
+                chromeArgs.push(path.resolve(args.cwd, args.file));
 
-            logger.log(`spawn('${chromePath}', ${JSON.stringify(chromeArgs) })`);
-            this._chromeProc = spawn(chromePath, chromeArgs, {
-                detached: true,
-                stdio: ['ignore'],
+                let launchUrl: string;
+                if (args.file) {
+                    launchUrl = coreUtils.pathToFileURL(path.join(args.cwd, args.file, 'index.html'));
+                } else if (args.url) {
+                    launchUrl = args.url;
+                }
+
+                if (launchUrl) {
+                    chromeArgs.push(launchUrl);
+                }
+
+                logger.log(`spawn('${chromePath}', ${JSON.stringify(chromeArgs) })`);
+                this._chromeProc = spawn(chromePath, chromeArgs, {
+                    detached: true,
+                    stdio: ['ignore'],
+                    cwd: chromeDir
+                });
+                this._chromeProc.unref();
+                this._chromeProc.on('error', (err) => {
+                    const errMsg = 'Chrome error: ' + err;
+                    logger.error(errMsg);
+                    this.terminateSession(errMsg);
+                });
+
+                return this.doAttach(port, launchUrl, args.address);
+            }, (reason) => {
+                logger.error('Launch canceled.', true);
+                return new Promise<void>((resolve) => {
+
+                });
             });
-            this._chromeProc.unref();
-            this._chromeProc.on('error', (err) => {
-                const errMsg = 'Chrome error: ' + err;
-                logger.error(errMsg);
-                this.terminateSession(errMsg);
-            });
-
-            return this.doAttach(port, launchUrl, args.address);
         });
     }
 

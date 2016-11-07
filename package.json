@@ -64,15 +64,22 @@
       },
       {
         "language": "fsharp"
+      },
+      {
+        "language": "haxe"
       }
     ],
     "debuggers": [
       {
         "type": "chrome",
         "label": "Chrome",
-        "program": "./out/bundle.js",
+        "program": "./out/chromeDebug.js",
         "runtime": "node",
         "aiKey": "AIF-d9b70cd4-b9f9-4d70-929b-a071c400b217",
+        "variables": {
+          "FindKha": "kha.findKha",
+          "FindFFMPEG": "kha.findFFMPEG"
+        },
         "initialConfigurations": [
           {
             "name": "Launch Chrome against localhost, with sourcemaps",
@@ -233,5 +240,8 @@
         }
       }
     ]
-  }
+  },
+  "extensionDependencies": [
+    "ktx.kha"
+  ]
 }
