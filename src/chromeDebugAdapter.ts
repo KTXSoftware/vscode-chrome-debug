@@ -125,8 +125,8 @@ export class ChromeDebugAdapter extends CoreDebugAdapter {
                 return this.doAttach(port, launchUrl, args.address);
             }, (reason) => {
                 logger.error('Launch canceled.', true);
-                return new Promise<void>((resolve) => {
-
+                return new Promise<void>((resolve, reject) => {
+                    reject({id: Math.floor(Math.random() * 100000), format: 'Compilation failed.'});
                 });
             });
         });
