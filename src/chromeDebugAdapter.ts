@@ -2,7 +2,7 @@
  * Copyright (C) Microsoft Corporation. All rights reserved.
  *--------------------------------------------------------*/
 
-import {ChromeDebugAdapter as CoreDebugAdapter, logger, utils as coreUtils, ISourceMapPathOverrides} from 'vscode-chrome-debug-core';
+import {ChromeDebugAdapter as CoreDebugAdapter, logger, utils as coreUtils, ISourceMapPathOverrides, ICommonRequestArgs} from 'vscode-chrome-debug-core';
 import {spawn, ChildProcess} from 'child_process';
 import Crdp from 'chrome-remote-debug-protocol';
 import {DebugProtocol} from 'vscode-debugprotocol';
@@ -26,11 +26,13 @@ export class ChromeDebugAdapter extends CoreDebugAdapter {
 
     public initialize(args: DebugProtocol.InitializeRequestArguments): DebugProtocol.Capabilities {
         this._overlayHelper = new utils.DebounceHelper(/*timeoutMs=*/200);
-        return super.initialize(args);
+        const capabilities = super.initialize(args);
+        capabilities.supportsRestartRequest = true;
+
+        return capabilities;
     }
 
     public launch(args: ILaunchRequestArgs): Promise<void> {
-        args.sourceMapPathOverrides = getSourceMapPathOverrides(args.webRoot, args.sourceMapPathOverrides);
         return super.launch(args).then(() => {
             logger.log('Using Kha from ' + args.kha + '\n', true);
 
@@ -133,8 +135,14 @@ export class ChromeDebugAdapter extends CoreDebugAdapter {
     }
 
     public attach(args: IAttachRequestArgs): Promise<void> {
-        args.sourceMapPathOverrides = getSourceMapPathOverrides(args.webRoot, args.sourceMapPathOverrides);
         return super.attach(args);
+    }
+
+    public commonArgs(args: ICommonRequestArgs): void {
+        args.sourceMapPathOverrides = getSourceMapPathOverrides(args.webRoot, args.sourceMapPathOverrides);
+        args.skipFileRegExps = ['^chrome-extension:.*'];
+
+        super.commonArgs(args);
     }
 
     protected doAttach(port: number, targetUrl?: string, address?: string, timeout?: number): Promise<void> {
@@ -145,6 +153,10 @@ export class ChromeDebugAdapter extends CoreDebugAdapter {
                     evalResponse => logger.log('Target userAgent: ' + evalResponse.result.value),
                     err => logger.log('Getting userAgent failed: ' + err.message));
         });
+    }
+
+    protected runConnection(): Promise<void>[] {
+        return [...super.runConnection(), this.chrome.Page.enable()];
     }
 
     protected onPaused(notification: Crdp.Debugger.PausedEvent): void {
@@ -164,6 +176,13 @@ export class ChromeDebugAdapter extends CoreDebugAdapter {
         }
 
         return super.disconnect();
+    }
+
+    /**
+     * Opt-in event called when the 'reload' button in the debug widget is pressed
+     */
+    public restart(): Promise<void> {
+        return this.chrome.Page.reload({ ignoreCache: true });
     }
 }
 
