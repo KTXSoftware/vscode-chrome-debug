@@ -6,6 +6,7 @@ import * as os from 'os';
 import * as path from 'path';
 
 import {ChromeDebugAdapter as CoreDebugAdapter, logger, utils as coreUtils, ISourceMapPathOverrides, stoppedEvent} from 'vscode-chrome-debug-core';
+import { Logger } from 'vscode-debugadapter';
 import {spawn, ChildProcess, fork, execSync} from 'child_process';
 import {Crdp} from 'vscode-chrome-debug-core';
 import {DebugProtocol} from 'vscode-debugprotocol';
@@ -38,6 +39,8 @@ export class ChromeDebugAdapter extends CoreDebugAdapter {
 
     public launch(args: ILaunchRequestArgs): Promise<void> {
         return super.launch(args).then(() => {
+            logger.setup(Logger.LogLevel.Log, false);
+
             logger.log('Using Kha from ' + args.kha + '\n');
 
             let options = {
@@ -123,9 +126,12 @@ export class ChromeDebugAdapter extends CoreDebugAdapter {
                     this.terminateSession(errMsg);
                 });
 
+                logger.setup(Logger.LogLevel.Warn, false);
+
                 return args.noDebug ? undefined :
                     this.doAttach(port, launchUrl || args.urlFilter, args.address, args.timeout);
             }, (reason) => {
+                logger.setup(Logger.LogLevel.Warn, false);
                 logger.error('Launch canceled.');
                 return new Promise<void>((resolve, reject) => {
                     reject({id: Math.floor(Math.random() * 100000), format: 'Compilation failed.'});
