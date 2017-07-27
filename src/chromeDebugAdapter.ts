@@ -13,8 +13,6 @@ import {DebugProtocol} from 'vscode-debugprotocol';
 import {ILaunchRequestArgs, IAttachRequestArgs, ICommonRequestArgs} from './chromeDebugInterfaces';
 import * as utils from './utils';
 
-import * as path from 'path';
-
 const DefaultWebSourceMapPathOverrides: ISourceMapPathOverrides = {
     'webpack:///./~/*': '${webRoot}/node_modules/*',
     'webpack:///./*': '${webRoot}/*',
@@ -40,7 +38,7 @@ export class ChromeDebugAdapter extends CoreDebugAdapter {
 
     public launch(args: ILaunchRequestArgs): Promise<void> {
         return super.launch(args).then(() => {
-            logger.log('Using Kha from ' + args.kha + '\n', true);
+            logger.log('Using Kha from ' + args.kha + '\n');
 
             let options = {
                 from: args.cwd,
@@ -79,9 +77,9 @@ export class ChromeDebugAdapter extends CoreDebugAdapter {
 
             return require(path.join(args.kha, 'Tools/khamake/out/main.js')).run(options, {
                 info: message => {
-                    logger.log(message, true);
+                    logger.log(message);
                 }, error: message => {
-                    logger.error(message, true);
+                    logger.error(message);
                 }
             }).then((value: string) => {
                 // Use vscode's electron
@@ -118,7 +116,7 @@ export class ChromeDebugAdapter extends CoreDebugAdapter {
                 }
 
                 logger.log(`spawn('${chromePath}', ${JSON.stringify(chromeArgs) })`);
-                this._chromeProc = spawnChrome(chromePath, chromeArgs, !!args.runtimeExecutable);
+                this._chromeProc = this.spawnChrome(chromePath, chromeArgs, !!args.runtimeExecutable);
                 this._chromeProc.on('error', (err) => {
                     const errMsg = 'Chrome error: ' + err;
                     logger.error(errMsg);
@@ -128,7 +126,7 @@ export class ChromeDebugAdapter extends CoreDebugAdapter {
                 return args.noDebug ? undefined :
                     this.doAttach(port, launchUrl || args.urlFilter, args.address, args.timeout);
             }, (reason) => {
-                logger.error('Launch canceled.', true);
+                logger.error('Launch canceled.');
                 return new Promise<void>((resolve, reject) => {
                     reject({id: Math.floor(Math.random() * 100000), format: 'Compilation failed.'});
                 });
