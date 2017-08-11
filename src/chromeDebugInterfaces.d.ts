@@ -18,8 +18,6 @@ export interface ILaunchRequestArgs extends Core.ILaunchRequestArgs, ICommonRequ
     address?: string;
     port?: number;
     userDataDir?: string;
-    kha?: string;
-    ffmpeg?: string;
     cwd?: string;
 }
 

@@ -100,10 +100,6 @@
           "typescriptreact"
         ],
         "startSessionCommand": "extension.chrome-debug.startSession",
-        "variables": {
-          "FindKha": "kha.findKha",
-          "FindFFMPEG": "kha.findFFMPEG"
-        },
         "initialConfigurations": [
           {
             "type": "chrome",
@@ -386,8 +382,5 @@
         "when": "debugType == 'chrome'"
       }
     ]
-  },
-  "extensionDependencies": [
-    "ktx.kha"
-  ]
+  }
 }
